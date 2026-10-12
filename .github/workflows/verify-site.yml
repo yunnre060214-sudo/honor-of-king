@@ -1,0 +1,28 @@
+name: Verify published website
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect public HTTP response
+        shell: bash
+        run: |
+          set -u
+          url="https://yunnre060214-sudo.github.io/honor-of-king/"
+          for attempt in 1 2 3 4; do
+            echo "=== Attempt ${attempt} ==="
+            curl --connect-timeout 8 --max-time 15 -sS -L -D /tmp/headers -o /tmp/body -w 'HTTP_STATUS=%{http_code} FINAL_URL=%{url_effective} REMOTE_IP=%{remote_ip}\n' "$url" || true
+            grep -Ei '^(HTTP/|content-type:|location:|server:|cache-control:|x-github-request-id:)' /tmp/headers || true
+            head -c 160 /tmp/body 2>/dev/null | tr '\n' ' ' || true
+            echo
+            sleep 6
+          done
