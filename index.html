@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f8f6">
+  <meta name="description" content="随机生成一位王者荣耀非辅助、非射手英雄，单文件离线可用。">
+  <title>王者荣耀 · 随机英雄</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-synthesis: none;
+      background: #f8f8f6;
+      color: #191919;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100svh; min-height: 100dvh; }
+    .page {
+      min-height: 100svh;
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: max(34px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom));
+    }
+    header { display: flex; flex-direction: column; gap: 8px; }
+    .eyebrow { font-size: 12px; letter-spacing: .11em; font-weight: 650; color: #858585; }
+    h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -.035em; }
+    main {
+      display: flex; flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 0 72px;
+      gap: 52px;
+      min-width: 0;
+    }
+    .hero-display {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 160px;
+      text-align: center;
+    }
+    .tiny { margin-bottom: 22px; font-size: 12px; color: #969696; letter-spacing: .10em; }
+    #hero {
+      margin: 0;
+      width: 100%;
+      overflow-wrap: anywhere;
+      font-size: clamp(48px, 10vw, 80px);
+      line-height: 1.25;
+      font-weight: 700;
+      letter-spacing: -.065em;
+      transform-origin: center;
+    }
+    #hero.initial { font-size: clamp(42px, 8vw, 64px); color: #b8b8b5; }
+    #hero.bump { animation: arrive .23s ease-out both; }
+    @keyframes arrive {
+      from { opacity: .35; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    button {
+      width: min(100%, 270px);
+      min-height: 56px;
+      padding: 14px 22px;
+      border: 1px solid #191919;
+      border-radius: 8px;
+      background: #191919;
+      color: #fff;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background-color .15s, transform .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:hover { background: #333; }
+    button:active { transform: scale(.98); }
+    button:focus-visible { outline: 3px solid #6e86ff; outline-offset: 3px; }
+    footer { text-align: center; color: #8b8b8b; font-size: 12px; line-height: 1.9; }
+    #viewer-notice { max-width: 320px; font-size: 13px; line-height: 1.6; color: #777; text-align: center; }
+    html.js-ready #viewer-notice { display: none; }
+    @media (prefers-reduced-motion: reduce) {
+      #hero.bump { animation: none; }
+      button { transition: none; }
+    }
+    @media (max-width: 400px) {
+      .page { padding-left: 22px; padding-right: 22px; }
+      main { gap: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="eyebrow">HONOR OF KINGS</div>
+      <h1>随机英雄</h1>
+    </header>
+    <main>
+      <div class="hero-display" aria-label="随机生成的英雄">
+        <div class="tiny">本次英雄</div>
+        <p id="hero" class="initial" role="status" aria-live="polite" aria-atomic="true">等待抽取</p>
+      </div>
+      <button id="draw" type="button" onclick="drawHero()">随机生成</button>
+      <div id="viewer-notice" role="note">若按钮无法响应，说明当前文件预览器禁用了 JavaScript。请下载文件后使用支持 JavaScript 的浏览器打开，或将它部署为网页。</div>
+    </main>
+    <footer>
+      <div>战士 / 坦克 / 刺客 / 法师</div>
+      <div id="pool-size"></div>
+    </footer>
+  </div>
+  <script>
+    "use strict";
+    // 本地英雄池核对日期：2026-10-12。排除主职业为射手或辅助的英雄。
+    // 元流之子仅代表坦克、法师、刺客形态，不包含射手及辅助形态。
+    const heroes = Object.freeze(["上官婉儿","不知火舞","云中君","云缨","亚瑟","亚连","元歌","兰陵王","关羽","典韦","刀锋宝贝","刘备","刘邦","司空震","司马懿","吕布","周瑜","哪吒","墨子","夏侯惇","夏洛特","大司命","女娲","妲己","姜子牙","姬小满","娜可露露","嫦娥","嬴政","孙悟空","孙策","安琪拉","宫本武藏","小乔","干将莫邪","廉颇","弈星","张良","影","扁鹊","暃","曜","曹操","李信","李白","杨戬","杨玉环","梦奇","橘右京","武则天","沈梦溪","海月","海诺","澜","狂铁","猪八戒","王昭君","王维","甄姬","白起","百里玄策","盘古","程咬金","米莱狄","老夫子","芈月","花木兰","蒙恬","蚩奼","裴擒虎","西施","诸葛亮","貂蝉","赵云","赵怀真","达摩","金蝉","钟无艳","铠","镜","阿轲","雅典娜","露娜","韩信","项羽","马超","高渐离","元流之子"]);
+    var previous = -1;
+    // 单文件、原生 JavaScript，不依赖网络或第三方脚本。
+    function drawHero() {
+      var output = document.getElementById("hero");
+      var index = Math.floor(Math.random() * (previous < 0 ? heroes.length : heroes.length - 1));
+      if (previous >= 0 && index >= previous) index += 1;
+      previous = index;
+      output.classList.remove("initial", "bump");
+      output.textContent = heroes[index];
+      void output.offsetWidth;
+      output.classList.add("bump");
+    }
+    document.getElementById("pool-size").textContent = "已收录 " + heroes.length + " 位英雄 · 不含辅助与射手";
+    document.documentElement.classList.add("js-ready");
+  </script>
+</body>
+</html>
